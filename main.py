@@ -1,42 +1,81 @@
-from Redis import RedisManager
 import hashlib
 import pandas as pd
 from Visualzation import DataVisualization
+from Redis import RedisManager
 
 
 def build_hash_key(data):
-    data_str = (str(data))
-    hash_key = hashlib.shake_128(data_str.encode('utf-8')).hexdigest(10)
-    return hash_key
+    """
+    Generates a unique hash key for the given data using SHAKE-128 hashing.
+    :param data: Data dictionary to hash.
+    :return: A unique hash key (10 characters).
+    """
+    data_str = str(data)
+    return hashlib.shake_128(data_str.encode('utf-8')).hexdigest(10)
+
+
+def load_players_from_csv(file_path):
+    """
+    Loads players data from a CSV file and returns a list of players and teams.
+    :param file_path: Path to the CSV file.
+    :return: (list of players, list of teams)
+    """
+    df = pd.read_csv(file_path)
+    players = []
+    teams = set()
+
+    for _, row in df.iterrows():
+        player = {
+            "name": row["name"],
+            "position": row["position"],
+            "team": row["team"],
+        }
+        players.append(player)
+        teams.add(row["team"])
+
+    return players, list(teams)
+
+
+def visualize_data(players):
+    """
+    Visualizes the player data using the DataVisualization class.
+    :param players: List of player dictionaries.
+    """
+    visualizer = DataVisualization()
+    visualizer.plot_team_distribution(players)
+
+
+def store_data_in_redis(redis_client, players):
+    """
+    Stores player data in Redis with unique hash keys.
+    :param redis_client: RedisManager instance.
+    :param players: List of player dictionaries.
+    """
+    for player in players:
+        player["key"] = build_hash_key(player)
+        redis_client.set_info_to_redis(player)
+
 
 def main():
-    players = []
-    teams = []
-    df = pd.read_csv('./data/players_list.csv')
-    visualize = DataVisualization()
+    # Load data from CSV
+    file_path = './data/players_list.csv'
+    players, teams = load_players_from_csv(file_path)
 
-    for idx in range(0, len(df)):
-        player = {}
-        player['name']=df.iloc[idx]['name']
-        player['position']=df.iloc[idx]['position']
-        player['team']=df.iloc[idx]['team']
-        if player['team'] not in teams:
-            teams.append(player['team'])
-        players.append(player)
+    # Visualize the data
+    visualize_data(players)
+    print(f"There are {len(teams)} teams in the data: {teams}")
 
-    visualize.plot_data(players)
-    print(f"There are {len(teams)} in data: ", teams)
-
+    # Initialize Redis client and store data
     redis_client = RedisManager()
-    for player in players:
-        player['key']=build_hash_key(player)
-        redis_client._set_info_to_redis(player)
+    store_data_in_redis(redis_client, players)
 
-    info = redis_client._get_info_from_redis("Manchester City")
+    # Example Redis operations
+    info = redis_client.get_info_from_redis("Manchester City")
     print(info)
-    redis_client._remove_info_from_redis(teams[0])
-    redis_client._remove_info_from_redis(teams[1])
-    redis_client._remove_info_from_redis(teams[2])
+
+    # Remove some team data from Redis
+    for team in teams[:]:
+        redis_client.remove_info_from_redis(team)
 
 if __name__ == '__main__':
     main()

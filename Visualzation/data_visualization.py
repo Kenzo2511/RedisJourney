@@ -1,40 +1,47 @@
-# import redis
-# import json
 import matplotlib.pyplot as plt
-import numpy as np
 from collections import defaultdict
 
-class DataVisualization():
+class DataVisualization:
     def __init__(self):
         pass
 
-    def plot_position_each_team(self, data):
-        grouped_data = defaultdict(list)
-        for item in data[1]:
-            grouped_data[item["position"]].append(item)
-        positions = grouped_data.keys()
-        number_of_positions = [len(group_item) for group_item in grouped_data.values()]
-        plt.bar(positions, number_of_positions)
-        plt.title(f'Number of positions in {data[0]}')
-        plt.xlabel('Position')
-        plt.ylabel('Number of positions')
-        plt.show()
-
-    def plot_data(self, data):
+    def plot_team_distribution(self, data):
+        """
+        Plots the number of players in each team.
+        :param data: List of dictionaries, each containing player information with "team" key.
+        """
         grouped_data = defaultdict(list)
         for item in data:
             grouped_data[item["team"]].append(item)
-        grouped_data = dict(grouped_data)
-        teams = grouped_data.keys()
-        number_of_playes = [len(group_item) for group_item in grouped_data.values()]
-        plt.bar(teams, number_of_playes)
-        plt.title('Number of players in teams')
+
+        teams = list(grouped_data.keys())
+        player_counts = [len(players) for players in grouped_data.values()]
+
+        plt.bar(teams, player_counts)
+        plt.title('Number of Players in Teams')
         plt.xlabel('Team')
-        plt.ylabel('Number of players')
+        plt.ylabel('Number of Players')
         plt.show()
 
-        for idx, team in enumerate(teams):
-            self.plot_position_each_team(list(grouped_data.items())[idx])
-        
+        # Plot positions for each team
+        for team, players in grouped_data.items():
+            self.plot_positions_in_team(team, players)
 
-        
+    def plot_positions_in_team(self, team_name, players):
+        """
+        Plots the distribution of positions for a given team.
+        :param team_name: Name of the team.
+        :param players: List of player dictionaries belonging to the team.
+        """
+        position_counts = defaultdict(int)
+        for player in players:
+            position_counts[player["position"]] += 1
+
+        positions = list(position_counts.keys())
+        counts = list(position_counts.values())
+
+        plt.bar(positions, counts)
+        plt.title(f'Position Distribution in Team: {team_name}')
+        plt.xlabel('Position')
+        plt.ylabel('Number of Players')
+        plt.show()
