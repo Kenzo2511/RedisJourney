@@ -6,10 +6,6 @@ class DataVisualization:
         pass
 
     def plot_team_distribution(self, data):
-        """
-        Plots the number of players in each team.
-        :param data: List of dictionaries, each containing player information with "team" key.
-        """
         grouped_data = defaultdict(list)
         for item in data:
             grouped_data[item["team"]].append(item)
@@ -28,11 +24,6 @@ class DataVisualization:
             self.plot_positions_in_team(team, players)
 
     def plot_positions_in_team(self, team_name, players):
-        """
-        Plots the distribution of positions for a given team.
-        :param team_name: Name of the team.
-        :param players: List of player dictionaries belonging to the team.
-        """
         position_counts = defaultdict(int)
         for player in players:
             position_counts[player["position"]] += 1
